@@ -1,17 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// 기본 글꼴 (영문·숫자용). 한글은 시스템 글꼴로 표시된다.
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// 글꼴은 maclock.css에서 시스템 글꼴(맑은 고딕 등)로 지정한다.
+// (기본 템플릿의 Google 글꼴은 쓰지 않아 뺐다)
 
 // 브라우저 탭 제목과 검색 결과 설명
 export const metadata: Metadata = {
@@ -22,10 +13,7 @@ export const metadata: Metadata = {
 // 모든 페이지를 감싸는 공통 틀
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="ko" className="h-full antialiased">
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
