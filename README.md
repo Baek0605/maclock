@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MacLock
 
-## Getting Started
+> 개발팀의 과거를 검색 가능한 지식으로.
 
-First, run the development server:
+GitHub 저장소를 연결하고 "예전에 이거 왜 바꿨지?"를 물으면, 관련 커밋·PR·이슈를 찾아 **근거 링크와 함께** 답해 주는 서비스입니다.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+**핵심 메시지:** 코드는 남지만, 맥락은 남지 않는다.
+
+- 팀: 디버그 (AI:Shoot 팀 프로젝트, 웹 개발 직무)
+- 유형: AI:Shoot A형 (화면 제작) — 화면, 실제 AI 연결, Vercel 배포
+
+---
+
+## 왜 만드나
+
+코드는 남아 있지만, 왜 이렇게 바뀌었는지는 커밋·PR·이슈에 흩어져 있습니다. 그래서 이미 해결한 문제를 다시 조사하거나 담당자에게 반복해서 물어보게 됩니다.
+
+**근거 (링커슈 현직자 인터뷰, 컨택 보고서 Ⅳ 핵심 병목 ①)**
+> "신규 기능 개발 시 기존 시스템 코드의 이해 및 과거 작업 히스토리 파악에 많은 시간이 소요되는 문제"
+
+멘토님은 과거 문의 답변과 오류 로그를 기반으로 히스토리를 정리하는 AI를 "기획을 생각했다"고 답하셨습니다.
+
+## 누가, 언제 쓰나
+
+- 기존 코드를 처음 맡은 신입 개발자, 오래된 코드를 고쳐야 하는 개발자
+- "이 코드 왜 이렇게 돼 있지?", "이 에러 예전에도 났었나?"가 궁금할 때
+
+## 동작 흐름
+
+```
+① 공개 GitHub 저장소 주소 입력
+② 커밋·PR·이슈를 GitHub API로 가져와 정리·마스킹·저장 (한 번만)
+③ 자연어로 질문 (에러 로그를 그대로 붙여넣어도 됨)
+④ 질문과 관련된 기록 찾기 (AI 임베딩 검색)
+⑤ 찾은 기록만 근거로 답변 요약 + 원본 링크 (AI)
+⑥ 개발자가 링크를 열어 직접 확인 (사람)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| 단계 | 누가 | 이유 |
+|---|---|---|
+| 기록 가져오기, 정리, 마스킹, 저장 | 코드 | 정해진 일이라 매번 같은 결과가 나와야 함 |
+| 관련 기록 찾기 | AI (임베딩) | 단어가 달라도 뜻이 비슷한 기록을 찾아야 함 |
+| 답변 요약 | AI (mini급 모델) | 여러 기록을 읽고 흐름을 정리해야 함 |
+| 근거 번호 → 링크 변환 | 코드 | AI가 없는 링크를 만들지 못하게 |
+| 맞는지 확인 | 사람 | AI가 틀린 기록을 근거로 댈 수 있음 |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 이번 범위
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**만드는 것**
+1. AI 맥락 검색 — 자연어 질문으로 관련 기록 찾기
+2. 해결 과정 요약 — "무슨 문제였나 / 왜 바꿨나 / 어떻게 고쳤나" + 근거 링크
 
-## Learn More
+**이번에 안 만드는 것**
+- 관련 기록 타임라인 연결
+- 사내 문의 내역, 오류 로그, Slack, Jira 연동
+- 비공개 저장소 연결
 
-To learn more about Next.js, take a look at the following resources:
+## AI 답변 규칙
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- 찾아 준 기록 안의 내용만 쓴다. 기록에 없는 이유를 지어내지 않는다.
+- 모든 내용에 근거 기록 번호를 붙인다. (링크 변환은 코드가 한다)
+- 관련 기록이 없으면 "관련 기록을 찾지 못했습니다"라고 답한다.
+- 기록끼리 내용이 다르면 둘 다 보여 주고 단정하지 않는다.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 기술 구성
 
-## Deploy on Vercel
+| 구분 | 도구 |
+|---|---|
+| 화면·서버 | Next.js 16 (App Router, TypeScript, Tailwind) |
+| 기록 수집 | GitHub REST API |
+| 검색 | OpenAI `text-embedding-3-small` (1주 차는 키워드 검색) |
+| 답변 | OpenAI mini급 모델 |
+| 저장 | Supabase + pgvector (1주 차는 로컬 JSON) |
+| 배포 | GitHub → Vercel |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 시작하기
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+git clone https://github.com/Baek0605/maclock.git
+cd maclock
+npm install
+cp .env.example .env.local   # Windows: copy .env.example .env.local
+# .env.local에 키를 채운다
+npm run dev
+```
+
+브라우저에서 http://localhost:3000 을 연다.
+
+> **프로젝트는 OneDrive 밖(예: `C:\dev`)에 두세요.** `node_modules` 동기화 때문에 느려지거나 파일이 잠길 수 있습니다.
+
+## 키 관리 규칙 (중요)
+
+- 키는 `.env.local`에만 둔다. `.gitignore`가 `.env*`를 막고 있으니 **절대 이 설정을 지우지 않는다.**
+- 커밋 전에 `git status`로 `.env.local`이 목록에 없는지 확인한다.
+- 키를 채팅방, 이슈, PR 설명에 붙여넣지 않는다.
+- 배포할 때는 Vercel 환경 변수에만 등록한다.
+- 화면(브라우저) 코드에서 OpenAI를 직접 부르지 않는다. 서버 쪽 API Route(`app/api/...`)에서만 부른다.
+- 예산: 운영진 지원 OpenAI 크레딧 $40. 개발 중에는 가짜 응답으로 화면을 만들고, AI 기능을 시험할 때만 실제로 호출한다.
+
+## 폴더 구조 (예정)
+
+```
+app/
+  page.tsx               저장소 연결 + 질문 + 답변 화면
+  api/
+    import/route.ts      GitHub 기록 가져오기·정리·저장
+    ask/route.ts         검색 + AI 답변
+lib/
+  github.ts              GitHub API 호출
+  normalize.ts           기록 정리 (공통 Record 형식)
+  masking.ts             토큰·이메일·비밀번호 마스킹
+  search.ts              키워드 검색 → 임베딩 검색
+  prompt.ts              AI 지시문
+data/
+  questions.json         검증용 질문 20개와 정답 기록
+docs/
+  개발계획.md            단계별 계획, 일정, 역할, 검증 방법
+```
+
+## 팀 작업 규칙
+
+- `main`에 바로 올리지 않고 브랜치를 만든다. 예: `feature/import`
+- 작업이 끝나면 PR을 올리고, 다른 팀원이 한 번 보고 합친다.
+- **PR 설명에 "무엇을 / 왜 바꿨는지"를 꼭 쓴다.** MacLock이 바로 그걸 찾아 주는 서비스라, 우리 저장소가 좋은 테스트 데이터가 된다.
+
+자세한 단계와 일정은 [`docs/개발계획.md`](docs/개발계획.md)를 보세요.
